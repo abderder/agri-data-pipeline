@@ -132,8 +132,8 @@ Le notebook Silver lit les fichiers JSON du Bronze, nettoie et structure les don
 - Séparation de `datetime` en deux colonnes : `date` (YYYY-MM-DD) et `heure` (HH:mm)
 - Ajout des colonnes `latitude`, `longitude`, `ville`, `pays`
 - Enregistrement du résultat au format **Parquet** dans le conteneur Silver :
-```python
-abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet
+
+_abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet_
 
 ---
 
@@ -144,19 +144,15 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
 #### Étapes clés :
 
 - Lecture de tous les fichiers du jour :
-```python
-df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")
+
+_df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")_
 
 - Ajout des colonnes country_code et city à l’aide de la fonction reverse_geocoder
 
 - Un UDF PySpark personnalisé a été utilisé pour intégrer reverse_geocoder dans le pipeline Spark.
 
 - Ajout d'une colonne stemp_class qui catégorise les températures :
-
    - <10°C → froid
-
    - entre 10°C et 25°C → modéré
-
    - 25°C → chaud
-
    - Écriture dans le conteneur Gold :
