@@ -159,14 +159,14 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
    - Écriture dans le conteneur Gold :
   <pre>abfss://gold@agristorage2025.dfs.core.windows.net/weather_gold/<today>/</pre>
 #### Schéma final :
-`date`
-`heure`
-`temperature_2m`
-`soil_temperature_0cm`
-`precipitation`
-`latitude`,  `longitude`
-`country_code`,  `city`
-`stemp_class`
+- `date`
+- `heure`
+- `temperature_2m`
+- `soil_temperature_0cm`
+- `precipitation`
+- `latitude`,  `longitude`
+- `country_code`,  `city`
+- `stemp_class`
 ---
 ## Azure Data Factory – Orchestration du pipeline
 
