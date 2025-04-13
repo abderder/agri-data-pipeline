@@ -57,7 +57,7 @@ Le pipeline suit cette structure logique :
 
 Cette section décrit la mise en place des services Azure nécessaires au fonctionnement du pipeline. L’objectif est d’assurer une communication fluide entre les différentes briques du projet.
 
-### 1. Création des ressources Azure
+### Création des ressources Azure
 
 Plusieurs services Azure ont été provisionnés pour mettre en œuvre l’architecture Medallion :
 
@@ -76,22 +76,6 @@ Plusieurs services Azure ont été provisionnés pour mettre en œuvre l’archi
   Utilisé pour orchestrer l’ensemble du pipeline : déclenchement automatique chaque jour à minuit, itération sur les villes, exécution des notebooks.
 
 ---
-
-### 2. Connexion entre services
-
-Afin que tous les services puissent interagir avec le Data Lake, plusieurs étapes de configuration ont été nécessaires :
-
-- **Création des credentials + external location dans Databricks**  
-  Ces éléments permettent à Databricks d’accéder aux fichiers dans le Data Lake via les chemins `abfss://`.
-
-- **Gestion des rôles et permissions (IAM)**  
-  Il a fallu attribuer le rôle suivant au service principal de Databricks :  
-  → `Storage Blob Data Contributor`  
-  Ceci a été fait au niveau du **container** et non uniquement au niveau du compte de stockage.
-!(./images/credentiel.png)
-!(./images/IAM control.png)
-
----
 ## Databricks – Traitement des données
 
 Le traitement des données se fait en trois étapes à l’aide de notebooks PySpark dans Databricks. Chaque notebook correspond à une couche du pipeline : Bronze, Silver ou Gold.
@@ -100,14 +84,30 @@ Le traitement des données se fait en trois étapes à l’aide de notebooks PyS
 
 ### 1. Configuration du cluster et librairie
 
-Un cluster Databricks a été créé avec un runtime compatible PySpark.  
+Création de cluster Databrick.  
 Nous avons installé la librairie suivante dans le cluster :
-
+![Configuration du cluster](images/config-cluster.png)
+![Compute Databricks](images/compute.png)
 - `reverse_geocoder` → permet d'enrichir chaque ligne avec le nom de la ville et le code pays à partir de la latitude et longitude.
+![Ajout de la librairie reverse_geocoder](images/libraryInCluster.png)
 
 ---
+### 2. Connexion entre services
 
-### 2. Bronze Notebook – Récupération des données météo
+Afin que tous les services puissent interagir avec le Data Lake, plusieurs étapes de configuration ont été nécessaires :
+
+- **Création des credentials + external location dans Databricks**  
+  Ces éléments permettent à Databricks d’accéder aux fichiers dans le Data Lake via les chemins `abfss://`.  
+  ![Credential](images/credentiel.png)  
+  ![External Location](images/exeternal_location.png)
+
+- **Gestion des rôles et permissions (IAM)**  
+  Il a fallu attribuer le rôle suivant au service principal de Databricks :  
+  → `Storage Blob Data Contributor`  
+  Ceci a été fait au niveau du **container** et non uniquement au niveau du compte de stockage.  
+  ![IAM Role](images/IAMcontrol.png)
+---
+### 3. Bronze Notebook – Récupération des données météo
 
 #### Étapes du traitement :
 
@@ -123,7 +123,7 @@ Nous avons installé la librairie suivante dans le cluster :
 
 ---
 
-### 3. Silver Notebook – Transformation des données
+### 4. Silver Notebook – Transformation des données
 
 Le notebook Silver lit les fichiers JSON du Bronze, nettoie et structure les données.
 
@@ -140,7 +140,7 @@ Le notebook Silver lit les fichiers JSON du Bronze, nettoie et structure les don
 
 ---
 
-### 4. Gold Notebook – Enrichissement et préparation finale
+### 5. Gold Notebook – Enrichissement et préparation finale
 
 Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et les agrège.
 
@@ -186,8 +186,9 @@ La première étape consiste à importer un **fichier CSV** contenant la liste d
 - `pays`
 - `latitude`
 - `longitude`
+![Fichier CSV villes](images/villeCsv.png)
 
-Ce fichier est stocké dans un **dataset ADF** de type CSV connecté à un blob storage ou Azure Data Lake.
+Ce fichier est stocké dans un **dataset ADF** de type CSV.
 
 #### Étapes dans le pipeline :
 - Un bloc **Lookup** est utilisé pour lire le fichier.
@@ -233,6 +234,7 @@ Une fois la boucle `ForEach` terminée, un troisième notebook est exécuté **h
 - Stocke les données finales dans la couche Gold
 
 Les paramètres (`today`, `silver_adls`, `gold_adls`) sont transmis à ce notebook soit via le premier `Bronze Notebook`, soit fixés dans ADF.
+![Pipeline ADF](images/piplineadf.png)
 
 ---
 
@@ -245,6 +247,7 @@ Pour automatiser l'exécution, un **Schedule Trigger** a été configuré dans A
 - **Action** : déclenchement complet du pipeline
 
 Cela permet d’avoir une **mise à jour automatique des données météo** sans intervention manuelle.
+![Déclencheur ADF](images/trigger.png)
 
 ---
 
@@ -266,6 +269,7 @@ FROM OPENROWSET(
     BULK 'https://agristorage2025.dfs.core.windows.net/gold/weather_gold/**',
     FORMAT = 'PARQUET'
 ) AS meteo  </pre>
+![Requête OPENROWSET](images/synaps.png)
 
 ### 2. Connexion à Synapse depuis Power BI
 Dans Power BI Desktop :
@@ -292,7 +296,7 @@ Le tableau de bord Power BI permet d’explorer facilement les données météo 
 
 ### Extrait du dashboard :
 
-![Dashboard météo Power BI](./images/DashboardPowerBI.png)
+![Dashboard météo Power BI](./images/Dashboard météo Power BI.png)
 
 Ce dashboard permet de :
 - Comparer l’évolution horaire de la température par ville
