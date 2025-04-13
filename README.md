@@ -132,10 +132,8 @@ Le notebook Silver lit les fichiers JSON du Bronze, nettoie et structure les don
 - Séparation de `datetime` en deux colonnes : `date` (YYYY-MM-DD) et `heure` (HH:mm)
 - Ajout des colonnes `latitude`, `longitude`, `ville`, `pays`
 - Enregistrement du résultat au format **Parquet** dans le conteneur Silver :
-  ```python
-  abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet
 ```python
-df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")
+abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet
 
 ---
 
