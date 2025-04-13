@@ -52,5 +52,45 @@ Le pipeline suit cette structure logique :
 
 ---
 
-*La suite du README détaillera chaque étape de mise en place pour reproduire l’architecture.*
+
+## Azure Setup
+
+Cette section décrit la mise en place des services Azure nécessaires au fonctionnement du pipeline. L’objectif est d’assurer une communication fluide entre les différentes briques du projet.
+
+### 1. Création des ressources Azure
+
+Plusieurs services Azure ont été provisionnés pour mettre en œuvre l’architecture Medallion :
+
+- **Azure Data Lake Storage Gen2**  
+  Utilisé pour stocker les fichiers dans les différentes couches : `bronze`, `silver` et `gold`.  
+  → Trois conteneurs ont été créés : `bronze`, `silver` et `gold`.
+
+- **Azure Databricks**  
+  Un workspace Databricks a été créé pour exécuter les traitements distribués avec PySpark.  
+  Un cluster a été lancé, avec la librairie `reverse_geocoder` installée pour enrichir les données par géolocalisation.
+
+- **Azure Synapse Analytics**  
+  Créé pour interroger les fichiers Parquet présents dans la couche Gold, via le langage SQL.
+
+- **Azure Data Factory (ADF)**  
+  Utilisé pour orchestrer l’ensemble du pipeline : déclenchement automatique chaque jour à minuit, itération sur les villes, exécution des notebooks.
+
+---
+
+### 2. Connexion entre services
+
+Afin que tous les services puissent interagir avec le Data Lake, plusieurs étapes de configuration ont été nécessaires :
+
+- **Création des credentials + external location dans Databricks**  
+  Ces éléments permettent à Databricks d’accéder aux fichiers dans le Data Lake via les chemins `abfss://`.
+
+- **Gestion des rôles et permissions (IAM)**  
+  Il a fallu attribuer le rôle suivant au service principal de Databricks :  
+  → `Storage Blob Data Contributor`  
+  Ceci a été fait au niveau du **container** et non uniquement au niveau du compte de stockage.
+
+Ces étapes garantissent une communication sécurisée et sans friction entre Databricks, ADF et Azure Storage.
+
+---
+
 
