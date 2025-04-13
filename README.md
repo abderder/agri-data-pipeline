@@ -116,7 +116,7 @@ Nous avons installé la librairie suivante dans le cluster :
   - `precipitation`
 - Vérification du contenu retourné par l’API
 - Ajout des champs `latitude`, `longitude`, `ville`, `pays`, `date` dans le JSON
-- Sauvegarde d’un fichier JSON par ville et par jour dans le conteneur **bronze**, chemin : *abfss://bronze@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.json*
+- Sauvegarde d’un fichier JSON par ville et par jour dans le conteneur **bronze**, chemin : <pre>abfss://bronze@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.json</pre>
 
 ---
 
@@ -133,7 +133,7 @@ Le notebook Silver lit les fichiers JSON du Bronze, nettoie et structure les don
 - Ajout des colonnes `latitude`, `longitude`, `ville`, `pays`
 - Enregistrement du résultat au format **Parquet** dans le conteneur Silver :
 
-_abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet_
+<pre> abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet</pre>
 
 ---
 
