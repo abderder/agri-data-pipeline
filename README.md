@@ -88,6 +88,8 @@ Afin que tous les services puissent interagir avec le Data Lake, plusieurs étap
   Il a fallu attribuer le rôle suivant au service principal de Databricks :  
   → `Storage Blob Data Contributor`  
   Ceci a été fait au niveau du **container** et non uniquement au niveau du compte de stockage.
+!(./images/credentiel.png)
+!(./images/IAM control.png)
 
 ---
 ## Databricks – Traitement des données
@@ -153,9 +155,11 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
 - Un UDF PySpark personnalisé a été utilisé pour intégrer reverse_geocoder dans le pipeline Spark.
 
 - Ajout d'une colonne stemp_class qui catégorise les températures :
-   - <10°C → froid
-   - entre 10°C et 25°C → modéré
-   - 25°C → chaud
+   - soil_temperature_0cm <0°C → gel
+   - soil_temperature_0cm 0°C et 10°C → froid
+   - soil_temperature_0cm entre 10°C et 20°C → modéré
+   - soil_temperature_0cm entre 20°C et 30°C → chaud
+   - soil_temperature_0cm > 30°C → très chaud
    - Écriture dans le conteneur Gold :
   <pre>abfss://gold@agristorage2025.dfs.core.windows.net/weather_gold/<today>/</pre>
 #### Schéma final :
@@ -244,7 +248,61 @@ Cela permet d’avoir une **mise à jour automatique des données météo** sans
 
 ---
 
-*La prochaine section présente l’analyse SQL et la visualisation des données dans Synapse Analytics et Power BI.*
+## 🔍 Synapse & Power BI
+
+Une fois les données enrichies et stockées dans la couche Gold (au format Parquet), elles peuvent être analysées directement via **Azure Synapse Analytics** en mode serverless, puis visualisées dans **Power BI**.
+
+---
+
+### 1. Lecture des fichiers Parquet avec OPENROWSET
+
+Dans Synapse, il n’est pas nécessaire d'importer les données. On peut interroger directement les fichiers Parquet stockés dans le Data Lake grâce à la fonction `OPENROWSET`.
+
+#### Exemple de requête :
+
+<pre>
+SELECT *
+FROM OPENROWSET(
+    BULK 'https://agristorage2025.dfs.core.windows.net/gold/weather_gold/**',
+    FORMAT = 'PARQUET'
+) AS meteo  </pre>
+
+### 2. Connexion à Synapse depuis Power BI
+Dans Power BI Desktop :
+
+- Accueil > Obtenir les données
+
+- On choisis Azure Synapse Analytics (SQL Serverless)
+
+- Server : Serverless SQL endpoint
+- Base de données : master et on écrirs une requête manuelle
+
+## Visualisations Power BI
+
+Le tableau de bord Power BI permet d’explorer facilement les données météo récupérées par le pipeline, à l’échelle mondiale.
+
+### Visuels utilisés
+
+| Type de visuel            | Données utilisées                                     |
+|---------------------------|--------------------------------------------------------|
+| **Courbe**                | Température (`temperature_2m`) par heure (`heure`)    |
+| **Carte géographique**    | Coordonnées (`latitude`, `longitude`)                 |
+| **Histogramme / Camembert** | Nombre d'observations par `stemp_class` (modéré, chaud…) |
+| **Segments (filtres)**    | Champs : `ville`, `pays`, `date`, `stemp_class`       |
+
+### Extrait du dashboard :
+
+![Dashboard météo Power BI](./images/dashboard_ville_global.png)
+
+Ce dashboard permet de :
+- Comparer l’évolution horaire de la température par ville
+- Visualiser la répartition géographique des températures moyennes
+- Explorer les classes de température par pays
+- Appliquer des filtres dynamiques pour zoomer sur une ville ou une classe
+
+
+
+
 
 
 
