@@ -35,7 +35,7 @@ Le pipeline suit cette structure logique :
 
 ### Architecture visuelle
 
-![Architecture Pipeline](./pipeline_architecture.png)
+![Architecture Pipeline](./agri-pipline.png)
 
 ### Stack technique utilisée
 
