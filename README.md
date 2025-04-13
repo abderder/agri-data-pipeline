@@ -89,8 +89,72 @@ Afin que tous les services puissent interagir avec le Data Lake, plusieurs étap
   → `Storage Blob Data Contributor`  
   Ceci a été fait au niveau du **container** et non uniquement au niveau du compte de stockage.
 
-Ces étapes garantissent une communication sécurisée et sans friction entre Databricks, ADF et Azure Storage.
+---
+## Databricks – Traitement des données
+
+Le traitement des données se fait en trois étapes à l’aide de notebooks PySpark dans Databricks. Chaque notebook correspond à une couche du pipeline : Bronze, Silver ou Gold.
 
 ---
 
+### 1. Configuration du cluster et librairie
 
+Un cluster Databricks a été créé avec un runtime compatible PySpark.  
+Nous avons installé la librairie suivante dans le cluster :
+
+- `reverse_geocoder` → permet d'enrichir chaque ligne avec le nom de la ville et le code pays à partir de la latitude et longitude.
+
+---
+
+### 2. Bronze Notebook – Récupération des données météo
+
+#### Étapes du traitement :
+
+- Lecture des paramètres transmis par Azure Data Factory : `latitude`, `longitude`, `ville`, `pays`, `today`
+- Requête HTTP vers l’API [Open-Meteo](https://open-meteo.com/), avec récupération des paramètres :
+  - `temperature_2m`
+  - `soil_temperature_0cm`
+  - `precipitation`
+- Vérification du contenu retourné par l’API
+- Ajout des champs `latitude`, `longitude`, `ville`, `pays`, `date` dans le JSON
+- Sauvegarde d’un fichier JSON par ville et par jour dans le conteneur **bronze**, chemin : abfss://bronze@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.json
+
+---
+
+### 3. Silver Notebook – Transformation des données
+
+Le notebook Silver lit les fichiers JSON du Bronze, nettoie et structure les données.
+
+#### Traitements effectués :
+
+- Extraction des listes `time`, `temperature_2m`, `soil_temperature_0cm`, `precipitation`
+- Utilisation de `posexplode` pour aligner chaque valeur sur son horodatage
+- Conversion du champ `time` en type `timestamp`
+- Séparation de `datetime` en deux colonnes : `date` (YYYY-MM-DD) et `heure` (HH:mm)
+- Ajout des colonnes `latitude`, `longitude`, `ville`, `pays`
+- Enregistrement du résultat au format **Parquet** dans le conteneur Silver : abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet
+
+---
+
+### 4. Gold Notebook – Enrichissement et préparation finale
+
+Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et les agrège.
+
+#### Étapes clés :
+
+- Lecture de tous les fichiers du jour :
+```python
+df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")
+
+- Ajout des colonnes country_code et city à l’aide de la fonction reverse_geocoder
+
+- Un UDF PySpark personnalisé a été utilisé pour intégrer reverse_geocoder dans le pipeline Spark.
+
+- Ajout d'une colonne stemp_class qui catégorise les températures :
+
+   - <10°C → froid
+
+   - entre 10°C et 25°C → modéré
+
+   - 25°C → chaud
+
+   - Écriture dans le conteneur Gold :
