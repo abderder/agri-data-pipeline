@@ -131,7 +131,7 @@ Le notebook Silver lit les fichiers JSON du Bronze, nettoie et structure les don
 - Conversion du champ `time` en type `timestamp`
 - Séparation de `datetime` en deux colonnes : `date` (YYYY-MM-DD) et `heure` (HH:mm)
 - Ajout des colonnes `latitude`, `longitude`, `ville`, `pays`
-- Enregistrement du résultat au format **Parquet** dans le conteneur Silver : abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet
+- Enregistrement du résultat au format **Parquet** dans le conteneur Silver : ```markdown abfss://silver@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.parquet
 
 ---
 
@@ -143,7 +143,7 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
 
 - Lecture de tous les fichiers du jour :
 ```python
-df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")``` 
+df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")
 
 - Ajout des colonnes country_code et city à l’aide de la fonction reverse_geocoder
 
