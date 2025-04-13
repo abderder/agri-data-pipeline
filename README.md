@@ -292,7 +292,7 @@ Le tableau de bord Power BI permet d’explorer facilement les données météo 
 
 ### Extrait du dashboard :
 
-![Dashboard météo Power BI](./images/Dashboard météo Power BI.png)
+![Dashboard météo Power BI](./images/DashboardPowerBI.png)
 
 Ce dashboard permet de :
 - Comparer l’évolution horaire de la température par ville
