@@ -116,7 +116,7 @@ Nous avons installé la librairie suivante dans le cluster :
   - `precipitation`
 - Vérification du contenu retourné par l’API
 - Ajout des champs `latitude`, `longitude`, `ville`, `pays`, `date` dans le JSON
-- Sauvegarde d’un fichier JSON par ville et par jour dans le conteneur **bronze**, chemin : abfss://bronze@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.json
+- Sauvegarde d’un fichier JSON par ville et par jour dans le conteneur **bronze**, chemin : *abfss://bronze@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.json*
 
 ---
 
@@ -145,7 +145,7 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
 
 - Lecture de tous les fichiers du jour :
 
-_df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")_
+*df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")*
 
 - Ajout des colonnes country_code et city à l’aide de la fonction reverse_geocoder
 
