@@ -158,16 +158,17 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
    - 25°C → chaud
    - Écriture dans le conteneur Gold :
   <pre>abfss://gold@agristorage2025.dfs.core.windows.net/weather_gold/<today>/</pre>
-  #### Schéma final :
-  `date`
-  `heure`
-  `temperature_2m`
-  `soil_temperature_0cm`
-  `precipitation`
-  `latitude`,  `longitude`
-  `country_code`,  `city`
-  `stemp_class`
-  ## Azure Data Factory – Orchestration du pipeline
+#### Schéma final :
+`date`
+`heure`
+`temperature_2m`
+`soil_temperature_0cm`
+`precipitation`
+`latitude`,  `longitude`
+`country_code`,  `city`
+`stemp_class`
+---
+## Azure Data Factory – Orchestration du pipeline
 
 L'orchestration complète du pipeline a été mise en place avec **Azure Data Factory (ADF)**, en utilisant des blocs visuels comme `Lookup`, `ForEach`, et `Execute Notebook`. L'objectif est d'automatiser le traitement des données météo pour plusieurs villes chaque jour.
 
