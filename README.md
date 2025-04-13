@@ -116,7 +116,8 @@ Nous avons installé la librairie suivante dans le cluster :
   - `precipitation`
 - Vérification du contenu retourné par l’API
 - Ajout des champs `latitude`, `longitude`, `ville`, `pays`, `date` dans le JSON
-- Sauvegarde d’un fichier JSON par ville et par jour dans le conteneur **bronze**, chemin : <pre>abfss://bronze@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.json</pre>
+- Sauvegarde d’un fichier JSON par ville et par jour dans le conteneur **bronze**, chemin :
+<pre>abfss://bronze@agristorage2025.dfs.core.windows.net/meteo/<pays><ville><today>.json</pre>
 
 ---
 
@@ -156,3 +157,93 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
    - entre 10°C et 25°C → modéré
    - 25°C → chaud
    - Écriture dans le conteneur Gold :
+  <pre>abfss://gold@agristorage2025.dfs.core.windows.net/weather_gold/<today>/</pre>
+  #### Schéma final :
+  `date`
+  `heure`
+  `temperature_2m`
+  `soil_temperature_0cm`
+  `precipitation`
+  `latitude`,  `longitude`
+  `country_code`,  `city`
+  `stemp_class`
+  ## Azure Data Factory – Orchestration du pipeline
+
+L'orchestration complète du pipeline a été mise en place avec **Azure Data Factory (ADF)**, en utilisant des blocs visuels comme `Lookup`, `ForEach`, et `Execute Notebook`. L'objectif est d'automatiser le traitement des données météo pour plusieurs villes chaque jour.
+
+---
+
+### 1. Ingestion multi-villes
+
+La première étape consiste à importer un **fichier CSV** contenant la liste des villes à traiter. Ce fichier contient les colonnes suivantes :
+
+- `ville`
+- `pays`
+- `latitude`
+- `longitude`
+
+Ce fichier est stocké dans un **dataset ADF** de type CSV connecté à un blob storage ou Azure Data Lake.
+
+#### Étapes dans le pipeline :
+- Un bloc **Lookup** est utilisé pour lire le fichier.
+- Ce lookup renvoie une liste d’objets JSON (une par ville).
+- Un bloc **ForEach** permet d’itérer sur chaque ligne.
+
+Dans la boucle `ForEach`, plusieurs paramètres sont passés à Databricks pour chaque exécution :
+
+- `ville`
+- `pays`
+- `latitude`
+- `longitude`
+- `today` (généré dynamiquement dans ADF avec `@utcNow()`)
+
+---
+
+### 2. Orchestration complète
+
+À l’intérieur du bloc `ForEach`, deux notebooks sont appelés de manière séquentielle :
+
+#### a. Bronze Notebook
+- Récupère les données depuis l’API Open-Meteo
+- Stocke les fichiers JSON dans Bronze
+
+#### b. Silver Notebook
+- Lit les fichiers Bronze
+- Transforme et stocke les données en Parquet dans Silver
+
+> Les deux notebooks utilisent `dbutils.widgets.get(...)` pour récupérer les paramètres passés depuis ADF.
+
+#### c. Gestion des retours de notebook
+Chaque notebook retourne un dictionnaire JSON sérialisé avec `dbutils.notebook.exit(json.dumps(...))`.  
+Ce retour permet de transmettre des informations à l’étape suivante, comme `today`, `silver_adls`, `gold_adls`, etc.
+
+---
+
+### 3. Exécution finale – Gold Notebook
+
+Une fois la boucle `ForEach` terminée, un troisième notebook est exécuté **hors de la boucle** :
+
+- Il récupère tous les fichiers Silver du jour (`*_{today}.parquet`)
+- Applique l'enrichissement (ville/pays + classification)
+- Stocke les données finales dans la couche Gold
+
+Les paramètres (`today`, `silver_adls`, `gold_adls`) sont transmis à ce notebook soit via le premier `Bronze Notebook`, soit fixés dans ADF.
+
+---
+
+### 4. Déclencheur automatique (Trigger)
+
+Pour automatiser l'exécution, un **Schedule Trigger** a été configuré dans ADF :
+
+- **Fréquence** : quotidienne
+- **Heure** : 00:00 (minuit UTC)
+- **Action** : déclenchement complet du pipeline
+
+Cela permet d’avoir une **mise à jour automatique des données météo** sans intervention manuelle.
+
+---
+
+*La prochaine section présente l’analyse SQL et la visualisation des données dans Synapse Analytics et Power BI.*
+
+
+
