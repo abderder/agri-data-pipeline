@@ -145,7 +145,7 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
 
 - Lecture de tous les fichiers du jour :
 
-*df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet")*
+<pre> ```python df = spark.read.parquet(f"{silver_adls}/meteo/*_{today}.parquet") ``` </pre>
 
 - Ajout des colonnes country_code et city à l’aide de la fonction reverse_geocoder
 
