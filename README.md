@@ -16,6 +16,8 @@ Les parties prenantes telles que les agriculteurs, les ingénieurs agronomes, le
 
 En automatisant la collecte et la transformation des données agricoles, ce pipeline permet aux utilisateurs de **prédire, analyser et optimiser** les activités agricoles avec précision et rapidité.
 
+---
+
 ## Architecture & Technologies
 
 Ce projet repose sur une architecture moderne de type **Medallion** (Bronze / Silver / Gold) pour le traitement et l’analyse des données météorologiques.
@@ -76,6 +78,34 @@ Plusieurs services Azure ont été provisionnés pour mettre en œuvre l’archi
   Utilisé pour orchestrer l’ensemble du pipeline : déclenchement automatique chaque jour à minuit, itération sur les villes, exécution des notebooks.
 
 ---
+## Source des données météo – API Open-Meteo
+
+Le projet utilise l’API gratuite [Open-Meteo](https://open-meteo.com/), qui fournit les prévisions horaires par coordonnées géographiques (latitude / longitude).
+
+### Exemple de requête envoyée
+<pre>
+https://api.open-meteo.com/v1/forecast?
+latitude=48.85&
+longitude=2.35&
+hourly=temperature_2m,soil_temperature_0cm,precipitation&
+timezone=Europe/Paris
+</pre>
+### Exemple de réponse (résumé) :
+<pre>
+{
+  "hourly": {
+    "time": [...],
+    "temperature_2m": [...],
+    "soil_temperature_0cm": [...],
+    "precipitation": [...]
+  }
+}
+</pre>
+  - `temperature_2m`: température de l’air à 2m
+  - `soil_temperature_0cm`: température du sol en surface
+  - `precipitation`: précipitations horaires
+---
+
 ## Databricks – Traitement des données
 
 Le traitement des données se fait en trois étapes à l’aide de notebooks PySpark dans Databricks. Chaque notebook correspond à une couche du pipeline : Bronze, Silver ou Gold.
@@ -86,13 +116,13 @@ Le traitement des données se fait en trois étapes à l’aide de notebooks PyS
 
 #### Création de cluster Databrick.  
 Nous avons installé la librairie suivante dans le cluster :
-### Configuration du cluster
+#### Configuration du cluster
 ![Configuration du cluster](images/config-cluster.png)
-### Compute Databricks
+#### Compute Databricks
 ![Compute Databricks](images/compute.png)
 
 - `reverse_geocoder` → permet d'enrichir chaque ligne avec le nom de la ville et le code pays à partir de la latitude et longitude.
-### Ajout de la librairie reverse_geocoder
+#### Ajout de la librairie reverse_geocoder
 ![Ajout de la librairie reverse_geocoder](images/libraryInCluster.png)
 
 ---
@@ -102,16 +132,16 @@ Afin que tous les services puissent interagir avec le Data Lake, plusieurs étap
 
 - **Création des credentials + external location dans Databricks**  
   Ces éléments permettent à Databricks d’accéder aux fichiers dans le Data Lake via les chemins `abfss://`.
- ### Credential
+ #### Credential
   ![Credential](images/credentiel.png)
- ### External Location
+ #### External Location
   ![External Location](images/exeternal_location.png)
 
 
 - **Gestion des rôles et permissions (IAM)**  
   Il a fallu attribuer le rôle suivant au service principal de Databricks :
   → `Storage Blob Data Contributor`
- ### IAM Role
+ #### IAM Role
   ![IAM Role](images/IAMcontrol.png)
 
 ### 3. Bronze Notebook – Récupération des données météo
@@ -167,7 +197,8 @@ Le Gold Notebook lit tous les fichiers Silver du jour, enrichit les données et 
    - soil_temperature_0cm entre 10°C et 20°C → modéré
    - soil_temperature_0cm entre 20°C et 30°C → chaud
    - soil_temperature_0cm > 30°C → très chaud
-   - Écriture dans le conteneur Gold :
+> La classification `stemp_class` est basée sur la température du sol, car elle est plus représentative des conditions réelles pour l’agriculture que la température de l’air seule.
+- Écriture dans le conteneur Gold :
   <pre>abfss://gold@agristorage2025.dfs.core.windows.net/weather_gold/<today>/</pre>
 #### Schéma final :
 - `date`
@@ -193,7 +224,7 @@ La première étape consiste à importer un **fichier CSV** contenant la liste d
 - `pays`
 - `latitude`
 - `longitude`
-### Fichier CSV villes
+#### Fichier CSV villes
 ![Fichier CSV villes](images/villeCsv.png)
 
 Ce fichier est stocké dans un **dataset ADF** de type CSV.
@@ -242,7 +273,7 @@ Une fois la boucle `ForEach` terminée, un troisième notebook est exécuté **h
 - Stocke les données finales dans la couche Gold
 
 Les paramètres (`today`, `silver_adls`, `gold_adls`) sont transmis à ce notebook soit via le premier `Bronze Notebook`, soit fixés dans ADF.
-### Pipline ADF
+#### Pipline ADF
 ![Pipeline ADF](images/piplineadf.png)
 
 ---
@@ -256,16 +287,15 @@ Pour automatiser l'exécution, un **Schedule Trigger** a été configuré dans A
 - **Action** : déclenchement complet du pipeline
 
 Cela permet d’avoir une **mise à jour automatique des données météo** sans intervention manuelle.
-### Déclencheur ADF
+#### Déclencheur ADF
 ![Déclencheur ADF](images/trigger.png)
 
 ---
 
-## 🔍 Synapse & Power BI
+## Synapse & Power BI
 
 Une fois les données enrichies et stockées dans la couche Gold (au format Parquet), elles peuvent être analysées directement via **Azure Synapse Analytics** en mode serverless, puis visualisées dans **Power BI**.
 
----
 
 ### 1. Lecture des fichiers Parquet avec OPENROWSET
 
@@ -279,7 +309,7 @@ FROM OPENROWSET(
     BULK 'https://agristorage2025.dfs.core.windows.net/gold/weather_gold/**',
     FORMAT = 'PARQUET'
 ) AS meteo  </pre>
-### Requête OPENROWSET
+#### Requête OPENROWSET
 ![Requête OPENROWSET](images/synaps.png)
 
 ### 2. Connexion à Synapse depuis Power BI
@@ -292,11 +322,8 @@ Dans Power BI Desktop :
 - Server : Serverless SQL endpoint
 - Base de données : master et on écrirs une requête manuelle
 
-## Visualisations Power BI
 
-Le tableau de bord Power BI permet d’explorer facilement les données météo récupérées par le pipeline, à l’échelle mondiale.
-
-### Visuels utilisés
+#### Visuels utilisés
 
 | Type de visuel            | Données utilisées                                     |
 |---------------------------|--------------------------------------------------------|
@@ -305,8 +332,7 @@ Le tableau de bord Power BI permet d’explorer facilement les données météo 
 | **Histogramme / Camembert** | Nombre d'observations par `stemp_class` (modéré, chaud…) |
 | **Segments (filtres)**    | Champs : `ville`, `pays`, `date`, `stemp_class`       |
 
-### Extrait du dashboard :
-### Dashboard météo Power BI
+#### Dashboard météo Power BI
 ![Dashboard météo Power BI](./images/DashboardPowerBI.png)
 
 
