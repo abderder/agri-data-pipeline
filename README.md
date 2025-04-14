@@ -87,7 +87,9 @@ Le traitement des données se fait en trois étapes à l’aide de notebooks PyS
 Création de cluster Databrick.  
 Nous avons installé la librairie suivante dans le cluster :
 ![Configuration du cluster](images/config-cluster.png)
+---
 ![Compute Databricks](images/compute.png)
+---
 - `reverse_geocoder` → permet d'enrichir chaque ligne avec le nom de la ville et le code pays à partir de la latitude et longitude.
 ![Ajout de la librairie reverse_geocoder](images/libraryInCluster.png)
 
@@ -98,8 +100,10 @@ Afin que tous les services puissent interagir avec le Data Lake, plusieurs étap
 
 - **Création des credentials + external location dans Databricks**  
   Ces éléments permettent à Databricks d’accéder aux fichiers dans le Data Lake via les chemins `abfss://`.  
-  ![Credential](images/credentiel.png)  
+  ![Credential](images/credentiel.png)
+  ---
   ![External Location](images/exeternal_location.png)
+  ---
 
 - **Gestion des rôles et permissions (IAM)**  
   Il a fallu attribuer le rôle suivant au service principal de Databricks :  
