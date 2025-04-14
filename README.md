@@ -84,13 +84,15 @@ Le traitement des données se fait en trois étapes à l’aide de notebooks PyS
 
 ### 1. Configuration du cluster et librairie
 
-Création de cluster Databrick.  
+#### Création de cluster Databrick.  
 Nous avons installé la librairie suivante dans le cluster :
+### Configuration du cluster
 ![Configuration du cluster](images/config-cluster.png)
----
+### Compute Databricks
 ![Compute Databricks](images/compute.png)
----
+
 - `reverse_geocoder` → permet d'enrichir chaque ligne avec le nom de la ville et le code pays à partir de la latitude et longitude.
+### Ajout de la librairie reverse_geocoder
 ![Ajout de la librairie reverse_geocoder](images/libraryInCluster.png)
 
 ---
@@ -99,18 +101,19 @@ Nous avons installé la librairie suivante dans le cluster :
 Afin que tous les services puissent interagir avec le Data Lake, plusieurs étapes de configuration ont été nécessaires :
 
 - **Création des credentials + external location dans Databricks**  
-  Ces éléments permettent à Databricks d’accéder aux fichiers dans le Data Lake via les chemins `abfss://`.  
+  Ces éléments permettent à Databricks d’accéder aux fichiers dans le Data Lake via les chemins `abfss://`.
+ ### Credential
   ![Credential](images/credentiel.png)
-  ---
+ ### External Location
   ![External Location](images/exeternal_location.png)
-  ---
+
 
 - **Gestion des rôles et permissions (IAM)**  
-  Il a fallu attribuer le rôle suivant au service principal de Databricks :  
-  → `Storage Blob Data Contributor`  
-  Ceci a été fait au niveau du **container** et non uniquement au niveau du compte de stockage.  
+  Il a fallu attribuer le rôle suivant au service principal de Databricks :
+  → `Storage Blob Data Contributor`
+ ### IAM Role
   ![IAM Role](images/IAMcontrol.png)
----
+
 ### 3. Bronze Notebook – Récupération des données météo
 
 #### Étapes du traitement :
@@ -190,6 +193,7 @@ La première étape consiste à importer un **fichier CSV** contenant la liste d
 - `pays`
 - `latitude`
 - `longitude`
+### Fichier CSV villes
 ![Fichier CSV villes](images/villeCsv.png)
 
 Ce fichier est stocké dans un **dataset ADF** de type CSV.
@@ -238,6 +242,7 @@ Une fois la boucle `ForEach` terminée, un troisième notebook est exécuté **h
 - Stocke les données finales dans la couche Gold
 
 Les paramètres (`today`, `silver_adls`, `gold_adls`) sont transmis à ce notebook soit via le premier `Bronze Notebook`, soit fixés dans ADF.
+### Pipline ADF
 ![Pipeline ADF](images/piplineadf.png)
 
 ---
@@ -251,6 +256,7 @@ Pour automatiser l'exécution, un **Schedule Trigger** a été configuré dans A
 - **Action** : déclenchement complet du pipeline
 
 Cela permet d’avoir une **mise à jour automatique des données météo** sans intervention manuelle.
+### Déclencheur ADF
 ![Déclencheur ADF](images/trigger.png)
 
 ---
@@ -273,6 +279,7 @@ FROM OPENROWSET(
     BULK 'https://agristorage2025.dfs.core.windows.net/gold/weather_gold/**',
     FORMAT = 'PARQUET'
 ) AS meteo  </pre>
+### Requête OPENROWSET
 ![Requête OPENROWSET](images/synaps.png)
 
 ### 2. Connexion à Synapse depuis Power BI
@@ -299,14 +306,8 @@ Le tableau de bord Power BI permet d’explorer facilement les données météo 
 | **Segments (filtres)**    | Champs : `ville`, `pays`, `date`, `stemp_class`       |
 
 ### Extrait du dashboard :
-
-![Dashboard météo Power BI](./images/Dashboard météo Power BI.png)
-
-Ce dashboard permet de :
-- Comparer l’évolution horaire de la température par ville
-- Visualiser la répartition géographique des températures moyennes
-- Explorer les classes de température par pays
-- Appliquer des filtres dynamiques pour zoomer sur une ville ou une classe
+### Dashboard météo Power BI
+![Dashboard météo Power BI](./images/DashboardPowerBI.png)
 
 
 
