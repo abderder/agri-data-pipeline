@@ -80,7 +80,7 @@ Plusieurs services Azure ont été provisionnés pour mettre en œuvre l’archi
 
 Le traitement des données se fait en trois étapes à l’aide de notebooks PySpark dans Databricks. Chaque notebook correspond à une couche du pipeline : Bronze, Silver ou Gold.
 
----
+
 
 ### 1. Configuration du cluster et librairie
 
